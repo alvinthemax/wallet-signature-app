@@ -36,7 +36,9 @@
       margin-bottom: 1.5rem;
     }
 
-    input, button, .dropdown-btn {
+    input,
+    button,
+    .dropdown-btn {
       width: 100%;
       padding: 0.75rem;
       margin: 0.5rem 0;
@@ -45,14 +47,16 @@
       border: 1px solid #ccc;
     }
 
-    button, .dropdown-btn {
+    button,
+    .dropdown-btn {
       background-color: #4f46e5;
       color: white;
       border: none;
       cursor: pointer;
     }
 
-    button:hover, .dropdown-btn:hover {
+    button:hover,
+    .dropdown-btn:hover {
       background-color: #4338ca;
     }
 
@@ -69,42 +73,29 @@
       left: 0;
       width: 100%;
       background-color: white;
-      box-shadow: 0 0 8px rgba(0,0,0,0.15);
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.15);
       z-index: 1;
       border-radius: 8px;
-      overflow: hidden;
       border: 1px solid #ccc;
-    }
-
-    .dropdown-content .address-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.75rem;
-      gap: 0.5rem;
-    }
-
-    .address-text {
-      max-width: 80%;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .dropdown-content button {
-      padding: 0.75rem;
-      width: 100%;
-      border: none;
-      background: white;
-      text-align: left;
-    }
-
-    .dropdown-content button:hover {
-      background-color: #f0f0f0;
     }
 
     .dropdown.show .dropdown-content {
       display: block;
+    }
+
+    .address-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      font-size: 0.95rem;
+    }
+
+    .address-short {
+      font-family: monospace;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .copy-btn {
@@ -137,7 +128,8 @@
         padding: 2.5rem;
       }
 
-      input, button {
+      input,
+      button {
         font-size: 1.1rem;
       }
     }
@@ -174,16 +166,17 @@
     const copySignatureBtn = document.getElementById("copySignatureBtn");
 
     function shortenAddress(addr) {
-      return addr.slice(0, 6) + "..." + addr.slice(-4);
+      return addr.slice(0, 4) + ".." + addr.slice(-4);
     }
 
     function renderConnectedDropdown() {
+      const shortAddr = shortenAddress(connectedAddress);
       walletSection.innerHTML = `
         <div class="dropdown" id="walletDropdown">
-          <button class="dropdown-btn" onclick="toggleDropdown()">🔗 ${shortenAddress(connectedAddress)}</button>
+          <button class="dropdown-btn" onclick="toggleDropdown()">🔗 ${shortAddr}</button>
           <div class="dropdown-content">
             <div class="address-row">
-              <span class="address-text">${connectedAddress}</span>
+              <span class="address-short">${shortAddr}</span>
               <button class="copy-btn" onclick="copyToClipboard('${connectedAddress}')">Copy</button>
             </div>
             <button onclick="disconnectWallet()">Disconnect</button>
@@ -194,7 +187,7 @@
 
     window.toggleDropdown = () => {
       document.getElementById("walletDropdown").classList.toggle("show");
-    }
+    };
 
     window.copyToClipboard = (text) => {
       navigator.clipboard.writeText(text).then(() => {
@@ -251,7 +244,6 @@
       }
     }
 
-    // Initial event setup
     document.getElementById("connectBtn").onclick = connectWallet;
     signBtn.onclick = signMessage;
   </script>
