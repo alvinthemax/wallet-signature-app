@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Wallet Signature App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <style>
     * {
       box-sizing: border-box;
@@ -29,7 +28,7 @@
       padding: 2rem;
       margin: 2rem 0;
       border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     }
 
     h2 {
@@ -37,7 +36,7 @@
       margin-bottom: 1.5rem;
     }
 
-    input, button {
+    input, button, .dropdown-btn {
       width: 100%;
       padding: 0.75rem;
       margin: 0.5rem 0;
@@ -46,22 +45,64 @@
       border: 1px solid #ccc;
     }
 
-    button {
+    button, .dropdown-btn {
       background-color: #4f46e5;
       color: white;
       border: none;
       cursor: pointer;
     }
 
-    button:hover {
+    button:hover, .dropdown-btn:hover {
       background-color: #4338ca;
     }
 
-    #walletAddress, #signature {
-      word-break: break-word;
-      margin-top: 0.5rem;
-      font-size: 0.95rem;
+    .dropdown {
+      position: relative;
+      display: inline-block;
+      width: 100%;
+    }
+
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      background-color: white;
+      min-width: 100%;
+      box-shadow: 0 0 8px rgba(0,0,0,0.15);
+      z-index: 1;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #ccc;
+    }
+
+    .dropdown-content div, .dropdown-content button {
       color: #333;
+      padding: 0.75rem;
+      text-align: left;
+      background: white;
+      border: none;
+      width: 100%;
+    }
+
+    .dropdown-content div:hover, .dropdown-content button:hover {
+      background-color: #f0f0f0;
+    }
+
+    .dropdown.show .dropdown-content {
+      display: block;
+    }
+
+    .copy-btn {
+      font-size: 0.85rem;
+      margin-left: 0.5rem;
+      cursor: pointer;
+      background: none;
+      color: #4f46e5;
+      border: none;
+      text-decoration: underline;
+    }
+
+    #signatureContainer {
+      margin-top: 1rem;
     }
 
     @media (min-width: 768px) {
@@ -80,45 +121,87 @@
   <div class="container">
     <h2>🦊 Wallet Signature</h2>
 
-    <button id="connectBtn">Connect Wallet</button>
-    <div id="walletAddress"></div>
+    <div id="walletSection">
+      <button id="connectBtn">Connect Wallet</button>
+    </div>
 
     <input type="text" id="messageInput" placeholder="Enter message to sign..." />
     <button id="signBtn">Sign Message</button>
 
-    <h4>Signed Message:</h4>
-    <div id="signature"></div>
+    <div id="signatureContainer">
+      <h4>Signed Message:</h4>
+      <div id="signature"></div>
+      <button id="copySignatureBtn" style="display:none;" class="copy-btn">Copy Signature</button>
+    </div>
   </div>
 
   <script>
     let provider;
     let signer;
+    let connectedAddress = '';
 
-    const connectBtn = document.getElementById("connectBtn");
-    const walletAddressDiv = document.getElementById("walletAddress");
+    const walletSection = document.getElementById("walletSection");
     const messageInput = document.getElementById("messageInput");
     const signBtn = document.getElementById("signBtn");
     const signatureDiv = document.getElementById("signature");
+    const copySignatureBtn = document.getElementById("copySignatureBtn");
 
-    // Connect Wallet
-    connectBtn.onclick = async () => {
+    function shortenAddress(addr) {
+      return addr.slice(0, 6) + "..." + addr.slice(-4);
+    }
+
+    function renderConnectedDropdown() {
+      walletSection.innerHTML = `
+        <div class="dropdown" id="walletDropdown">
+          <button class="dropdown-btn" onclick="toggleDropdown()">🔗 ${shortenAddress(connectedAddress)}</button>
+          <div class="dropdown-content">
+            <div>
+              ${connectedAddress}
+              <button class="copy-btn" onclick="copyToClipboard('${connectedAddress}')">Copy</button>
+            </div>
+            <button onclick="disconnectWallet()">Disconnect</button>
+          </div>
+        </div>
+      `;
+    }
+
+    window.toggleDropdown = () => {
+      document.getElementById("walletDropdown").classList.toggle("show");
+    }
+
+    window.copyToClipboard = (text) => {
+      navigator.clipboard.writeText(text).then(() => {
+        alert("Copied to clipboard!");
+      }).catch(err => {
+        alert("Copy failed: " + err.message);
+      });
+    };
+
+    async function connectWallet() {
       if (window.ethereum) {
         try {
           provider = new ethers.providers.Web3Provider(window.ethereum);
           await provider.send("eth_requestAccounts", []);
           signer = provider.getSigner();
-          const address = await signer.getAddress();
-          walletAddressDiv.textContent = "Connected: " + address;
+          connectedAddress = await signer.getAddress();
+          renderConnectedDropdown();
         } catch (err) {
           alert("Connection failed: " + err.message);
         }
       } else {
         alert("MetaMask not detected!");
       }
-    };
+    }
 
-    // Sign Message
-    signBtn.onclick = async () => {
+    function disconnectWallet() {
+      connectedAddress = '';
+      signer = null;
+      provider = null;
+      walletSection.innerHTML = `<button id="connectBtn">Connect Wallet</button>`;
+      document.getElementById("connectBtn").onclick = connectWallet;
+    }
+
+    async function signMessage() {
       if (!signer) {
         alert("Please connect wallet first.");
         return;
@@ -133,11 +216,17 @@
       try {
         const signature = await signer.signMessage(message);
         signatureDiv.textContent = signature;
+        copySignatureBtn.style.display = "inline-block";
+        copySignatureBtn.onclick = () => copyToClipboard(signature);
         alert("Message signed successfully!");
       } catch (err) {
         alert("Signing failed: " + err.message);
       }
-    };
+    }
+
+    // Set up initial click events
+    document.getElementById("connectBtn").onclick = connectWallet;
+    signBtn.onclick = signMessage;
   </script>
 
 </body>
