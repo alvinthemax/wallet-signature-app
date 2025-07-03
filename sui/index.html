@@ -139,6 +139,36 @@
       font-size: 0.85rem;
     }
 
+    .wallet-options {
+      display: none;
+      margin-top: 0.5rem;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #ddd;
+    }
+
+    .wallet-options.show {
+      display: block;
+    }
+
+    .wallet-option {
+      padding: 0.75rem;
+      background: white;
+      border: none;
+      border-bottom: 1px solid #eee;
+      text-align: left;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .wallet-option:hover {
+      background: #f5f5f5;
+    }
+
+    .wallet-option:last-child {
+      border-bottom: none;
+    }
+
     @media (min-width: 768px) {
       .container {
         padding: 2.5rem;
@@ -157,6 +187,12 @@
 
     <div id="walletSection">
       <button id="connectBtn">Connect Wallet</button>
+      <div id="walletOptions" class="wallet-options">
+        <button class="wallet-option" data-wallet="sui">Sui Wallet (Sui Extension)</button>
+        <button class="wallet-option" data-wallet="okx">OKX Wallet</button>
+        <button class="wallet-option" data-wallet="martian">Martian Wallet</button>
+        <button class="wallet-option" data-wallet="suiet">Suiet Wallet</button>
+      </div>
     </div>
 
     <input type="text" id="messageInput" placeholder="Enter message to sign..." />
@@ -172,8 +208,10 @@
   <script>
     let wallet = null;
     let connectedAddress = '';
+    let walletType = '';
 
     const walletSection = document.getElementById("walletSection");
+    const walletOptions = document.getElementById("walletOptions");
     const messageInput = document.getElementById("messageInput");
     const signBtn = document.getElementById("signBtn");
     const signatureDiv = document.getElementById("signature");
@@ -187,7 +225,7 @@
       const shortAddr = shortenAddress(connectedAddress);
       walletSection.innerHTML = `
         <div class="dropdown" id="walletDropdown">
-          <button class="dropdown-btn" onclick="toggleDropdown()">🔗 ${shortAddr}</button>
+          <button class="dropdown-btn" onclick="toggleDropdown()">🔗 ${walletType} | ${shortAddr}</button>
           <div class="dropdown-content">
             <div class="address-row">
               <span class="address-short">${shortAddr}</span>
@@ -227,27 +265,81 @@
       });
     }
 
-    async function connectWallet() {
-      if (window.sui) {
-        try {
-          // Connect to Sui wallet
-          wallet = await window.sui.getWallet();
-          const accounts = await wallet.getAccounts();
-          connectedAddress = accounts[0];
-          renderConnectedDropdown();
-        } catch (err) {
-          alert("Connection failed: " + err.message);
+    function toggleWalletOptions() {
+      walletOptions.classList.toggle("show");
+    }
+
+    async function connectWallet(walletName) {
+      try {
+        let suiWallet;
+        
+        switch(walletName) {
+          case 'sui':
+            if (!window.sui) {
+              throw new Error("Sui Wallet extension not detected!");
+            }
+            suiWallet = await window.sui.getWallet();
+            walletType = "Sui Wallet";
+            break;
+            
+          case 'okx':
+            if (!window.okxwallet || !window.okxwallet.sui) {
+              throw new Error("OKX Wallet extension not detected!");
+            }
+            suiWallet = window.okxwallet.sui;
+            walletType = "OKX Wallet";
+            break;
+            
+          case 'martian':
+            if (!window.martian || !window.martian.sui) {
+              throw new Error("Martian Wallet extension not detected!");
+            }
+            suiWallet = window.martian.sui;
+            walletType = "Martian Wallet";
+            break;
+            
+          case 'suiet':
+            if (!window.suiet) {
+              throw new Error("Suiet Wallet extension not detected!");
+            }
+            suiWallet = window.suiet;
+            walletType = "Suiet Wallet";
+            break;
+            
+          default:
+            throw new Error("Unknown wallet type");
         }
-      } else {
-        alert("Sui wallet not detected! Please install a Sui wallet like Suiet or Martian.");
+        
+        // Connect to wallet
+        wallet = suiWallet;
+        const accounts = await wallet.getAccounts();
+        connectedAddress = accounts[0];
+        walletOptions.classList.remove("show");
+        renderConnectedDropdown();
+      } catch (err) {
+        alert("Connection failed: " + err.message);
       }
     }
 
     function disconnectWallet() {
       wallet = null;
       connectedAddress = '';
-      walletSection.innerHTML = `<button id="connectBtn">Connect Wallet</button>`;
-      document.getElementById("connectBtn").onclick = connectWallet;
+      walletType = '';
+      walletSection.innerHTML = `
+        <button id="connectBtn">Connect Wallet</button>
+        <div id="walletOptions" class="wallet-options">
+          <button class="wallet-option" data-wallet="sui">Sui Wallet (Sui Extension)</button>
+          <button class="wallet-option" data-wallet="okx">OKX Wallet</button>
+          <button class="wallet-option" data-wallet="martian">Martian Wallet</button>
+          <button class="wallet-option" data-wallet="suiet">Suiet Wallet</button>
+        </div>
+      `;
+      
+      // Reattach event listeners
+      document.getElementById("connectBtn").onclick = toggleWalletOptions;
+      document.querySelectorAll(".wallet-option").forEach(option => {
+        option.onclick = () => connectWallet(option.dataset.wallet);
+      });
     }
 
     async function signMessage() {
@@ -263,10 +355,20 @@
       }
 
       try {
-        // Sign the message
-        const signature = await wallet.signMessage({
-          message: new TextEncoder().encode(message)
-        });
+        // Sign the message - different wallets might have slightly different APIs
+        let signature;
+        
+        if (walletType === "OKX Wallet") {
+          // OKX wallet might have a different signing API
+          signature = await wallet.signMessage({
+            message: new TextEncoder().encode(message)
+          });
+        } else {
+          // Standard Sui wallet signing
+          signature = await wallet.signMessage({
+            message: new TextEncoder().encode(message)
+          });
+        }
         
         // Display the signature
         const signatureString = JSON.stringify(signature, null, 2);
@@ -279,23 +381,75 @@
       }
     }
 
-    document.getElementById("connectBtn").onclick = connectWallet;
+    // Initialize event listeners
+    document.getElementById("connectBtn").onclick = toggleWalletOptions;
+    
+    document.querySelectorAll(".wallet-option").forEach(option => {
+      option.onclick = () => connectWallet(option.dataset.wallet);
+    });
+    
     signBtn.onclick = signMessage;
 
-    // Check if wallet is already connected
-    if (window.sui) {
-      window.sui.getWallet().then(w => {
-        if (w) {
-          w.getAccounts().then(accounts => {
+    // Check if any wallet is already connected on page load
+    async function checkConnectedWallet() {
+      try {
+        // Check Sui Wallet
+        if (window.sui) {
+          const w = await window.sui.getWallet();
+          if (w) {
+            const accounts = await w.getAccounts();
             if (accounts.length > 0) {
               wallet = w;
               connectedAddress = accounts[0];
+              walletType = "Sui Wallet";
               renderConnectedDropdown();
+              return;
             }
-          });
+          }
         }
-      });
+        
+        // Check OKX Wallet
+        if (window.okxwallet && window.okxwallet.sui) {
+          const accounts = await window.okxwallet.sui.getAccounts();
+          if (accounts.length > 0) {
+            wallet = window.okxwallet.sui;
+            connectedAddress = accounts[0];
+            walletType = "OKX Wallet";
+            renderConnectedDropdown();
+            return;
+          }
+        }
+        
+        // Check Martian Wallet
+        if (window.martian && window.martian.sui) {
+          const accounts = await window.martian.sui.getAccounts();
+          if (accounts.length > 0) {
+            wallet = window.martian.sui;
+            connectedAddress = accounts[0];
+            walletType = "Martian Wallet";
+            renderConnectedDropdown();
+            return;
+          }
+        }
+        
+        // Check Suiet Wallet
+        if (window.suiet) {
+          const accounts = await window.suiet.getAccounts();
+          if (accounts.length > 0) {
+            wallet = window.suiet;
+            connectedAddress = accounts[0];
+            walletType = "Suiet Wallet";
+            renderConnectedDropdown();
+            return;
+          }
+        }
+      } catch (err) {
+        console.error("Error checking connected wallets:", err);
+      }
     }
+
+    // Run check on page load
+    checkConnectedWallet();
   </script>
 </body>
 </html>
