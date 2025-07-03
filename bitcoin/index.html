@@ -84,6 +84,17 @@
       display: block;
     }
 
+    .dropdown-option {
+      padding: 0.75rem;
+      text-align: center;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .dropdown-option:hover {
+      background-color: #fef0dd;
+    }
+
     .address-row {
       display: flex;
       justify-content: space-between;
@@ -138,16 +149,6 @@
       font-size: 0.85rem;
     }
 
-    .wallet-options {
-      display: flex;
-      gap: 10px;
-      margin-top: 10px;
-    }
-
-    .wallet-options button {
-      flex: 1;
-    }
-
     @media (min-width: 768px) {
       .container {
         padding: 2.5rem;
@@ -165,10 +166,13 @@
     <h2>₿ Bitcoin Wallet Signature</h2>
 
     <div id="walletSection">
-      <button id="connectUnisatBtn">Connect Unisat</button>
-      <div class="wallet-options">
-        <button id="connectXverseBtn">Connect Xverse</button>
-        <button id="connectLeatherBtn">Connect Leather</button>
+      <div class="dropdown" id="walletDropdown">
+        <button class="dropdown-btn" onclick="toggleConnectDropdown()">Connect Wallet</button>
+        <div class="dropdown-content">
+          <div class="dropdown-option" onclick="connectUnisat()">Connect Unisat</div>
+          <div class="dropdown-option" onclick="connectXverse()">Connect Xverse</div>
+          <div class="dropdown-option" onclick="connectLeather()">Connect Leather</div>
+        </div>
       </div>
     </div>
 
@@ -211,11 +215,15 @@
           </div>
         </div>
       `;
-      
+
       document.getElementById("copyAddressBtn").addEventListener("click", () => {
         copyToClipboard(connectedAddress, "copyAddressBtn");
       });
     }
+
+    window.toggleConnectDropdown = () => {
+      document.getElementById("walletDropdown").classList.toggle("show");
+    };
 
     window.toggleDropdown = () => {
       document.getElementById("walletDropdown").classList.toggle("show");
@@ -228,7 +236,7 @@
           const originalText = btn.textContent;
           btn.textContent = "Copied!";
           btn.classList.add("copied");
-          
+
           setTimeout(() => {
             btn.textContent = originalText;
             btn.classList.remove("copied");
@@ -296,15 +304,15 @@
       connectedAddress = '';
       walletType = '';
       walletSection.innerHTML = `
-        <button id="connectUnisatBtn">Connect Unisat</button>
-        <div class="wallet-options">
-          <button id="connectXverseBtn">Connect Xverse</button>
-          <button id="connectLeatherBtn">Connect Leather</button>
+        <div class="dropdown" id="walletDropdown">
+          <button class="dropdown-btn" onclick="toggleConnectDropdown()">Connect Wallet</button>
+          <div class="dropdown-content">
+            <div class="dropdown-option" onclick="connectUnisat()">Connect Unisat</div>
+            <div class="dropdown-option" onclick="connectXverse()">Connect Xverse</div>
+            <div class="dropdown-option" onclick="connectLeather()">Connect Leather</div>
+          </div>
         </div>
       `;
-      document.getElementById("connectUnisatBtn").onclick = connectUnisat;
-      document.getElementById("connectXverseBtn").onclick = connectXverse;
-      document.getElementById("connectLeatherBtn").onclick = connectLeather;
     }
 
     async function signMessage() {
@@ -321,7 +329,7 @@
 
       try {
         let signature;
-        
+
         if (walletType === 'unisat') {
           signature = await wallet.signMessage(message);
         } else if (walletType === 'xverse' || walletType === 'leather') {
@@ -330,7 +338,7 @@
             params: { message }
           });
         }
-        
+
         const signatureString = JSON.stringify(signature, null, 2);
         signatureDiv.textContent = signatureString;
         copySignatureBtn.style.display = "inline-block";
@@ -342,9 +350,6 @@
     }
 
     // Initialize event listeners
-    document.getElementById("connectUnisatBtn").onclick = connectUnisat;
-    document.getElementById("connectXverseBtn").onclick = connectXverse;
-    document.getElementById("connectLeatherBtn").onclick = connectLeather;
     signBtn.onclick = signMessage;
 
     // Check if any wallet is already connected
