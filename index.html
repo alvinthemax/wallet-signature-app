@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Wallet Signature App</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      background-color: #f4f4f4;
+    }
+    input, button {
+      padding: 0.5rem;
+      font-size: 1rem;
+      margin: 0.5rem 0;
+      width: 100%;
+    }
+    #signature {
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>🦊 EVM Wallet Signature App</h2>
+
+  <button id="connectBtn">Connect Wallet</button>
+  <div id="walletAddress"></div>
+
+  <br>
+  <input type="text" id="messageInput" placeholder="Enter message to sign..." />
+  <button id="signBtn">Sign Message</button>
+
+  <h4>Signed Message:</h4>
+  <div id="signature"></div>
+
+  <script>
+    let provider;
+    let signer;
+
+    const connectBtn = document.getElementById("connectBtn");
+    const walletAddressDiv = document.getElementById("walletAddress");
+    const messageInput = document.getElementById("messageInput");
+    const signBtn = document.getElementById("signBtn");
+    const signatureDiv = document.getElementById("signature");
+
+    // Connect Wallet
+    connectBtn.onclick = async () => {
+      if (window.ethereum) {
+        try {
+          provider = new ethers.providers.Web3Provider(window.ethereum);
+          await provider.send("eth_requestAccounts", []);
+          signer = provider.getSigner();
+          const address = await signer.getAddress();
+          walletAddressDiv.textContent = "Connected: " + address;
+        } catch (err) {
+          alert("Connection failed: " + err.message);
+        }
+      } else {
+        alert("MetaMask not detected!");
+      }
+    };
+
+    // Sign Message
+    signBtn.onclick = async () => {
+      if (!signer) {
+        alert("Please connect wallet first.");
+        return;
+      }
+
+      const message = messageInput.value;
+      if (!message) {
+        alert("Please enter a message to sign.");
+        return;
+      }
+
+      try {
+        const signature = await signer.signMessage(message);
+        signatureDiv.textContent = signature;
+        alert("Message signed successfully!");
+      } catch (err) {
+        alert("Signing failed: " + err.message);
+      }
+    };
+  </script>
+
+</body>
+  </html>
