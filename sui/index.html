@@ -2,10 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Sui Wallet Signature App</title>
+  <title>Sui Mobile Wallet Connection</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.jsdelivr.net/npm/@mysten/wallet-standard@latest"></script>
   <script src="https://unpkg.com/@mysten/sui.js@latest"></script>
-    <style>
+  <style>
     * {
       box-sizing: border-box;
     }
@@ -34,12 +35,32 @@
     h2 {
       text-align: center;
       margin-bottom: 1.5rem;
-      color: #6fbcf0; /* Sui blue */
+      color: #6fbcf0;
     }
 
-    input,
-    button,
-    .dropdown-btn {
+    button {
+      width: 100%;
+      padding: 0.75rem;
+      margin: 0.5rem 0;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: none;
+      background-color: #6fbcf0;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    button:hover {
+      background-color: #5aa8e0;
+    }
+
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+
+    input {
       width: 100%;
       padding: 0.75rem;
       margin: 0.5rem 0;
@@ -48,435 +69,222 @@
       border: 1px solid #ccc;
     }
 
-    button,
-    .dropdown-btn {
-      background-color: #6fbcf0; /* Sui blue */
-      color: white;
-      border: none;
-      cursor: pointer;
-      transition: background-color 0.2s ease;
-    }
-
-    button:hover,
-    .dropdown-btn:hover {
-      background-color: #5aa8e0;
-    }
-
-    .dropdown {
-      position: relative;
-      display: block;
-      width: 100%;
-    }
-
-    .dropdown-content {
-      display: none;
-      position: absolute;
-      top: 100%;
-      left: 0;
-      width: 100%;
-      background-color: white;
-      box-shadow: 0 0 8px rgba(0, 0, 0, 0.15);
-      z-index: 1;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-    }
-
-    .dropdown.show .dropdown-content {
-      display: block;
-    }
-
-    .address-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.75rem 1rem;
-      font-size: 0.95rem;
-    }
-
-    .address-short {
-      font-family: monospace;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .copy-btn {
-      background: none;
-      color: #6fbcf0;
-      border: none;
-      cursor: pointer;
-      font-size: 0.85rem;
-      text-decoration: underline;
-      flex-shrink: 0;
-      padding: 0.25rem 0.5rem;
-      border-radius: 4px;
-      transition: all 0.2s ease;
-    }
-
-    .copy-btn:hover {
-      background-color: #e6f4fc;
-      text-decoration: none;
-    }
-
-    .copy-btn.copied {
-      color: #28a745;
-      text-decoration: none;
-      pointer-events: none;
-    }
-
-    #signatureContainer {
+    #walletInfo {
       margin-top: 1rem;
-    }
-
-    #signature {
-      max-height: 150px;
-      overflow-x: auto;
-      padding: 0.75rem;
+      padding: 1rem;
       background: #f6f6f6;
-      border: 1px solid #ddd;
       border-radius: 8px;
-      word-break: break-word;
-      font-size: 0.85rem;
-    }
-
-    .wallet-options {
-      display: none;
-      margin-top: 0.5rem;
-      border-radius: 8px;
-      overflow: hidden;
       border: 1px solid #ddd;
     }
 
-    .wallet-options.show {
-      display: block;
+    #status {
+      margin: 1rem 0;
+      padding: 0.5rem;
+      border-radius: 4px;
+      font-size: 0.9rem;
     }
 
-    .wallet-option {
-      padding: 0.75rem;
-      background: white;
-      border: none;
-      border-bottom: 1px solid #eee;
-      text-align: left;
-      cursor: pointer;
-      width: 100%;
+    .success {
+      background-color: #e6ffed;
+      color: #28a745;
+      border: 1px solid #28a745;
     }
 
-    .wallet-option:hover {
-      background: #f5f5f5;
+    .error {
+      background-color: #ffebee;
+      color: #dc3545;
+      border: 1px solid #dc3545;
     }
 
-    .wallet-option:last-child {
-      border-bottom: none;
-    }
-
-    @media (min-width: 768px) {
-      .container {
-        padding: 2.5rem;
-      }
-
-      input,
-      button {
-        font-size: 1.1rem;
-      }
+    .info {
+      background-color: #e7f4ff;
+      color: #007bff;
+      border: 1px solid #007bff;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>🌀 Sui Wallet Signature</h2>
-
-    <div id="walletSection">
-      <button id="connectBtn">Connect Wallet</button>
-      <div id="walletOptions" class="wallet-options">
-        <button class="wallet-option" data-wallet="sui">Sui Wallet (Official Extension)</button>
-        <button class="wallet-option" data-wallet="okx">OKX Wallet</button>
-        <button class="wallet-option" data-wallet="martian">Martian Wallet</button>
-        <button class="wallet-option" data-wallet="suiet">Suiet Wallet</button>
-        <button class="wallet-option" data-wallet="ethos">Ethos Wallet</button>
-      </div>
+    <h2>🌀 Sui Mobile Wallet Connection</h2>
+    
+    <div id="walletButtons"></div>
+    
+    <div id="status" class="info">
+      Wallet not connected
     </div>
-
-    <div id="connectionStatus"></div>
-
-    <input type="text" id="messageInput" placeholder="Enter message to sign..." />
-    <button id="signBtn">Sign Message</button>
-
-    <div id="signatureContainer">
-      <h4>Signed Message:</h4>
-      <div id="signature"></div>
-      <button id="copySignatureBtn" style="display:none;" class="copy-btn">Copy Signature</button>
+    
+    <div id="walletInfo" style="display: none;">
+      <p><strong>Wallet:</strong> <span id="walletName"></span></p>
+      <p><strong>Address:</strong> <span id="walletAddress"></span></p>
+      <button id="disconnectBtn">Disconnect</button>
+    </div>
+    
+    <input type="text" id="messageInput" placeholder="Enter message to sign" />
+    <button id="signBtn" disabled>Sign Message</button>
+    
+    <div id="signatureResult" style="display: none; margin-top: 1rem;">
+      <h4>Signature Result:</h4>
+      <pre id="signatureOutput"></pre>
+      <button id="copySignatureBtn">Copy Signature</button>
     </div>
   </div>
 
   <script>
+    // DOM Elements
+    const walletButtons = document.getElementById('walletButtons');
+    const statusDiv = document.getElementById('status');
+    const walletInfo = document.getElementById('walletInfo');
+    const walletName = document.getElementById('walletName');
+    const walletAddress = document.getElementById('walletAddress');
+    const disconnectBtn = document.getElementById('disconnectBtn');
+    const messageInput = document.getElementById('messageInput');
+    const signBtn = document.getElementById('signBtn');
+    const signatureResult = document.getElementById('signatureResult');
+    const signatureOutput = document.getElementById('signatureOutput');
+    const copySignatureBtn = document.getElementById('copySignatureBtn');
+
+    // State
     let wallet = null;
-    let connectedAddress = '';
-    let walletType = '';
+    let accounts = [];
 
-    // DOM elements
-    const walletSection = document.getElementById("walletSection");
-    const walletOptions = document.getElementById("walletOptions");
-    const messageInput = document.getElementById("messageInput");
-    const signBtn = document.getElementById("signBtn");
-    const signatureDiv = document.getElementById("signature");
-    const copySignatureBtn = document.getElementById("copySignatureBtn");
-    const connectionStatus = document.getElementById("connectionStatus");
-
-    // Helper functions
-    function shortenAddress(addr) {
-      return addr?.length > 10 ? addr.slice(0, 6) + "..." + addr.slice(-4) : addr || '';
-    }
-
-    function showStatus(message, isError = false) {
-      connectionStatus.textContent = message;
-      connectionStatus.style.color = isError ? 'red' : 'green';
-      connectionStatus.style.margin = '10px 0';
-      connectionStatus.style.fontSize = '0.9rem';
-    }
-
-    function renderConnectedDropdown() {
-      const shortAddr = shortenAddress(connectedAddress);
-      walletSection.innerHTML = `
-        <div class="dropdown" id="walletDropdown">
-          <button class="dropdown-btn" onclick="toggleDropdown()">🔗 ${walletType} | ${shortAddr}</button>
-          <div class="dropdown-content">
-            <div class="address-row">
-              <span class="address-short">${shortAddr}</span>
-              <button class="copy-btn" id="copyAddressBtn">Copy Address</button>
-            </div>
-            <button onclick="disconnectWallet()">Disconnect</button>
-          </div>
-        </div>
-      `;
-      
-      document.getElementById("copyAddressBtn").addEventListener("click", () => {
-        copyToClipboard(connectedAddress, "copyAddressBtn");
-      });
-    }
-
-    window.toggleDropdown = () => {
-      const dropdown = document.getElementById("walletDropdown");
-      if (dropdown) dropdown.classList.toggle("show");
-    };
-
-    function copyToClipboard(text, buttonId = null) {
-      navigator.clipboard.writeText(text).then(() => {
-        if (buttonId) {
-          const btn = document.getElementById(buttonId);
-          const originalText = btn.textContent;
-          btn.textContent = "Copied!";
-          btn.classList.add("copied");
-          
-          setTimeout(() => {
-            btn.textContent = originalText;
-            btn.classList.remove("copied");
-          }, 2000);
-        }
-      }).catch(err => {
-        console.error("Copy failed:", err);
-      });
-    }
-
-    function toggleWalletOptions() {
-      walletOptions.classList.toggle("show");
-    }
-
-    // Wallet connection functions
-    async function connectWallet(walletName) {
-      showStatus(`Connecting to ${walletName}...`);
+    // Initialize
+    async function init() {
+      updateStatus('Checking for wallets...', 'info');
       
       try {
-        let accounts = [];
+        // Wait for wallets to be detected
+        await new Promise(resolve => setTimeout(resolve, 500));
         
-        switch(walletName.toLowerCase()) {
-          case 'sui':
-            if (typeof window.sui === 'undefined') {
-              throw new Error("Sui Wallet extension not detected. Please install it.");
-            }
-            wallet = await window.sui.getWallet();
-            walletType = "Sui Wallet";
-            accounts = await wallet.getAccounts();
-            break;
-            
-          case 'okx':
-            if (typeof window.okxwallet === 'undefined' || typeof window.okxwallet.sui === 'undefined') {
-              throw new Error("OKX Wallet extension not detected. Please install it.");
-            }
-            wallet = window.okxwallet.sui;
-            walletType = "OKX Wallet";
-            accounts = await wallet.getAccounts();
-            break;
-            
-          case 'martian':
-            if (typeof window.martian === 'undefined' || typeof window.martian.sui === 'undefined') {
-              throw new Error("Martian Wallet extension not detected. Please install it.");
-            }
-            wallet = window.martian.sui;
-            walletType = "Martian Wallet";
-            accounts = await wallet.getAccounts();
-            break;
-            
-          case 'suiet':
-            if (typeof window.suiet === 'undefined') {
-              throw new Error("Suiet Wallet extension not detected. Please install it.");
-            }
-            wallet = window.suiet;
-            walletType = "Suiet Wallet";
-            accounts = await wallet.getAccounts();
-            break;
-            
-          case 'ethos':
-            if (typeof window.ethos === 'undefined') {
-              throw new Error("Ethos Wallet extension not detected. Please install it.");
-            }
-            wallet = window.ethos;
-            walletType = "Ethos Wallet";
-            accounts = await wallet.getAccounts();
-            break;
-            
-          default:
-            throw new Error("Unsupported wallet type");
+        // Get detected wallets
+        const detectedWallets = window.sui?.wallet?.getWallets() || [];
+        
+        if (detectedWallets.length === 0) {
+          updateStatus('No wallets detected. Please open in a Sui-compatible mobile browser.', 'error');
+          return;
         }
         
-        if (!accounts || accounts.length === 0) {
-          throw new Error("No accounts found in wallet");
-        }
+        renderWalletButtons(detectedWallets);
+        updateStatus(`Found ${detectedWallets.length} wallet(s)`, 'success');
         
-        connectedAddress = accounts[0];
-        walletOptions.classList.remove("show");
-        renderConnectedDropdown();
-        showStatus(`Connected to ${walletType} successfully!`);
-        
-      } catch (err) {
-        showStatus(`Connection failed: ${err.message}`, true);
-        console.error(`Error connecting to ${walletName}:`, err);
+      } catch (error) {
+        console.error('Initialization error:', error);
+        updateStatus(`Error: ${error.message}`, 'error');
       }
     }
 
+    // Render wallet selection buttons
+    function renderWalletButtons(wallets) {
+      walletButtons.innerHTML = '';
+      
+      wallets.forEach(wallet => {
+        const button = document.createElement('button');
+        button.textContent = wallet.name;
+        button.onclick = () => connectWallet(wallet);
+        walletButtons.appendChild(button);
+      });
+    }
+
+    // Connect to wallet
+    async function connectWallet(walletToConnect) {
+      updateStatus(`Connecting to ${walletToConnect.name}...`, 'info');
+      
+      try {
+        // Enable the wallet
+        await walletToConnect.features['standard:connect'].connect();
+        
+        // Get accounts
+        accounts = await walletToConnect.features['standard:events'].on('change', ({ accounts }) => {
+          console.log('Accounts changed:', accounts);
+        });
+        
+        accounts = await walletToConnect.features['standard:connect'].getAccounts();
+        
+        if (accounts.length === 0) {
+          throw new Error('No accounts found in wallet');
+        }
+        
+        wallet = walletToConnect;
+        updateWalletInfo();
+        updateStatus(`Connected to ${wallet.name} successfully!`, 'success');
+        signBtn.disabled = false;
+        
+      } catch (error) {
+        console.error('Connection error:', error);
+        updateStatus(`Connection failed: ${error.message}`, 'error');
+      }
+    }
+
+    // Update wallet info display
+    function updateWalletInfo() {
+      walletName.textContent = wallet.name;
+      walletAddress.textContent = `${accounts[0].address.slice(0, 6)}...${accounts[0].address.slice(-4)}`;
+      walletInfo.style.display = 'block';
+    }
+
+    // Disconnect wallet
     function disconnectWallet() {
       wallet = null;
-      connectedAddress = '';
-      walletType = '';
-      walletSection.innerHTML = `
-        <button id="connectBtn">Connect Wallet</button>
-        <div id="walletOptions" class="wallet-options">
-          <button class="wallet-option" data-wallet="sui">Sui Wallet (Official Extension)</button>
-          <button class="wallet-option" data-wallet="okx">OKX Wallet</button>
-          <button class="wallet-option" data-wallet="martian">Martian Wallet</button>
-          <button class="wallet-option" data-wallet="suiet">Suiet Wallet</button>
-          <button class="wallet-option" data-wallet="ethos">Ethos Wallet</button>
-        </div>
-      `;
-      showStatus("Disconnected", true);
-      
-      // Reattach event listeners
-      document.getElementById("connectBtn").onclick = toggleWalletOptions;
-      document.querySelectorAll(".wallet-option").forEach(option => {
-        option.onclick = () => connectWallet(option.dataset.wallet);
-      });
+      accounts = [];
+      walletInfo.style.display = 'none';
+      signBtn.disabled = true;
+      signatureResult.style.display = 'none';
+      updateStatus('Disconnected', 'info');
+      init(); // Reinitialize to show wallet buttons
     }
 
+    // Sign message
     async function signMessage() {
-      if (!wallet) {
-        showStatus("Please connect wallet first", true);
-        return;
-      }
-
-      const message = messageInput.value;
+      const message = messageInput.value.trim();
+      
       if (!message) {
-        showStatus("Please enter a message to sign", true);
+        updateStatus('Please enter a message to sign', 'error');
         return;
       }
-
+      
+      updateStatus('Signing message...', 'info');
+      
       try {
-        showStatus("Signing message...");
+        const signerAccount = accounts[0];
+        const signature = await wallet.features['standard:signMessage'].signMessage({
+          message: new TextEncoder().encode(message),
+          account: signerAccount
+        });
         
-        let signature;
-        const messageBytes = new TextEncoder().encode(message);
+        signatureOutput.textContent = JSON.stringify(signature, null, 2);
+        signatureResult.style.display = 'block';
+        updateStatus('Message signed successfully!', 'success');
         
-        // Handle different wallet signing methods
-        if (walletType === "OKX Wallet") {
-          signature = await wallet.signMessage({ message: messageBytes });
-        } 
-        else if (walletType === "Ethos Wallet") {
-          signature = await wallet.signMessage({ message });
-        }
-        else {
-          // Standard Sui wallet signing
-          signature = await wallet.signMessage({ message: messageBytes });
-        }
-        
-        // Display the signature
-        const signatureString = typeof signature === 'object' 
-          ? JSON.stringify(signature, null, 2) 
-          : signature;
-          
-        signatureDiv.textContent = signatureString;
-        copySignatureBtn.style.display = "inline-block";
-        copySignatureBtn.onclick = () => copyToClipboard(signatureString, "copySignatureBtn");
-        showStatus("Message signed successfully!");
-      } catch (err) {
-        showStatus(`Signing failed: ${err.message}`, true);
-        console.error("Signing error:", err);
+      } catch (error) {
+        console.error('Signing error:', error);
+        updateStatus(`Signing failed: ${error.message}`, 'error');
       }
     }
 
-    // Initialize event listeners
-    document.getElementById("connectBtn").onclick = toggleWalletOptions;
-    
-    document.querySelectorAll(".wallet-option").forEach(option => {
-      option.onclick = () => connectWallet(option.dataset.wallet);
-    });
-    
-    signBtn.onclick = signMessage;
-
-    // Enhanced wallet detection
-    async function detectConnectedWallet() {
-      const WALLETS = [
-        { name: 'Sui Wallet', check: () => window.sui, connect: async () => await window.sui?.getWallet() },
-        { name: 'OKX Wallet', check: () => window.okxwallet?.sui, connect: async () => window.okxwallet?.sui },
-        { name: 'Martian Wallet', check: () => window.martian?.sui, connect: async () => window.martian?.sui },
-        { name: 'Suiet Wallet', check: () => window.suiet, connect: async () => window.suiet },
-        { name: 'Ethos Wallet', check: () => window.ethos, connect: async () => window.ethos }
-      ];
-
-      for (const wallet of WALLETS) {
-        try {
-          if (wallet.check()) {
-            const walletInstance = await wallet.connect();
-            if (walletInstance) {
-              const accounts = await walletInstance.getAccounts();
-              if (accounts?.length > 0) {
-                return {
-                  wallet: walletInstance,
-                  type: wallet.name,
-                  address: accounts[0]
-                };
-              }
-            }
-          }
-        } catch (err) {
-          console.error(`Error checking ${wallet.name}:`, err);
-        }
-      }
-      return null;
+    // Update status message
+    function updateStatus(message, type) {
+      statusDiv.textContent = message;
+      statusDiv.className = type;
     }
 
-    // Check for connected wallet on load
-    window.addEventListener('load', async () => {
-      try {
-        const detectedWallet = await detectConnectedWallet();
-        if (detectedWallet) {
-          wallet = detectedWallet.wallet;
-          walletType = detectedWallet.type;
-          connectedAddress = detectedWallet.address;
-          renderConnectedDropdown();
-          showStatus(`Auto-connected to ${walletType}`);
-        }
-      } catch (err) {
-        console.error("Wallet detection error:", err);
-      }
+    // Event listeners
+    disconnectBtn.addEventListener('click', disconnectWallet);
+    signBtn.addEventListener('click', signMessage);
+    copySignatureBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(signatureOutput.textContent)
+        .then(() => {
+          const originalText = copySignatureBtn.textContent;
+          copySignatureBtn.textContent = 'Copied!';
+          setTimeout(() => {
+            copySignatureBtn.textContent = originalText;
+          }, 2000);
+        })
+        .catch(err => {
+          console.error('Copy failed:', err);
+        });
     });
+
+    // Initialize on load
+    window.addEventListener('load', init);
   </script>
 </body>
 </html>
