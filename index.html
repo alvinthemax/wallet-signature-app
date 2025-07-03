@@ -4,36 +4,91 @@
   <meta charset="UTF-8">
   <title>Wallet Signature App</title>
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 500px;
+      width: 90%;
+      background: white;
       padding: 2rem;
-      background-color: #f4f4f4;
+      margin: 2rem 0;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
     input, button {
-      padding: 0.5rem;
-      font-size: 1rem;
-      margin: 0.5rem 0;
       width: 100%;
+      padding: 0.75rem;
+      margin: 0.5rem 0;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: 1px solid #ccc;
     }
-    #signature {
-      word-break: break-all;
+
+    button {
+      background-color: #4f46e5;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #4338ca;
+    }
+
+    #walletAddress, #signature {
+      word-break: break-word;
+      margin-top: 0.5rem;
+      font-size: 0.95rem;
+      color: #333;
+    }
+
+    @media (min-width: 768px) {
+      .container {
+        padding: 2.5rem;
+      }
+
+      input, button {
+        font-size: 1.1rem;
+      }
     }
   </style>
 </head>
 <body>
 
-  <h2>🦊 EVM Wallet Signature App</h2>
+  <div class="container">
+    <h2>🦊 Wallet Signature</h2>
 
-  <button id="connectBtn">Connect Wallet</button>
-  <div id="walletAddress"></div>
+    <button id="connectBtn">Connect Wallet</button>
+    <div id="walletAddress"></div>
 
-  <br>
-  <input type="text" id="messageInput" placeholder="Enter message to sign..." />
-  <button id="signBtn">Sign Message</button>
+    <input type="text" id="messageInput" placeholder="Enter message to sign..." />
+    <button id="signBtn">Sign Message</button>
 
-  <h4>Signed Message:</h4>
-  <div id="signature"></div>
+    <h4>Signed Message:</h4>
+    <div id="signature"></div>
+  </div>
 
   <script>
     let provider;
@@ -86,4 +141,4 @@
   </script>
 
 </body>
-  </html>
+</html>
