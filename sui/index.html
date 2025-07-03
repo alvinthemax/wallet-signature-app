@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sui Wallet Signature App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://unpkg.com/@mysten/sui.js@latest"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 500px;
+      width: 90%;
+      background: white;
+      padding: 2rem;
+      margin: 2rem 0;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      color: #6fbcf0; /* Sui blue */
+    }
+
+    input,
+    button,
+    .dropdown-btn {
+      width: 100%;
+      padding: 0.75rem;
+      margin: 0.5rem 0;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    button,
+    .dropdown-btn {
+      background-color: #6fbcf0; /* Sui blue */
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    button:hover,
+    .dropdown-btn:hover {
+      background-color: #5aa8e0;
+    }
+
+    .dropdown {
+      position: relative;
+      display: block;
+      width: 100%;
+    }
+
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      width: 100%;
+      background-color: white;
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.15);
+      z-index: 1;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    .dropdown.show .dropdown-content {
+      display: block;
+    }
+
+    .address-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      font-size: 0.95rem;
+    }
+
+    .address-short {
+      font-family: monospace;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .copy-btn {
+      background: none;
+      color: #6fbcf0;
+      border: none;
+      cursor: pointer;
+      font-size: 0.85rem;
+      text-decoration: underline;
+      flex-shrink: 0;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+    }
+
+    .copy-btn:hover {
+      background-color: #e6f4fc;
+      text-decoration: none;
+    }
+
+    .copy-btn.copied {
+      color: #28a745;
+      text-decoration: none;
+      pointer-events: none;
+    }
+
+    #signatureContainer {
+      margin-top: 1rem;
+    }
+
+    #signature {
+      max-height: 150px;
+      overflow-x: auto;
+      padding: 0.75rem;
+      background: #f6f6f6;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      word-break: break-word;
+      font-size: 0.85rem;
+    }
+
+    @media (min-width: 768px) {
+      .container {
+        padding: 2.5rem;
+      }
+
+      input,
+      button {
+        font-size: 1.1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🌀 Sui Wallet Signature</h2>
+
+    <div id="walletSection">
+      <button id="connectBtn">Connect Wallet</button>
+    </div>
+
+    <input type="text" id="messageInput" placeholder="Enter message to sign..." />
+    <button id="signBtn">Sign Message</button>
+
+    <div id="signatureContainer">
+      <h4>Signed Message:</h4>
+      <div id="signature"></div>
+      <button id="copySignatureBtn" style="display:none;" class="copy-btn">Copy Signature</button>
+    </div>
+  </div>
+
+  <script>
+    let wallet = null;
+    let connectedAddress = '';
+
+    const walletSection = document.getElementById("walletSection");
+    const messageInput = document.getElementById("messageInput");
+    const signBtn = document.getElementById("signBtn");
+    const signatureDiv = document.getElementById("signature");
+    const copySignatureBtn = document.getElementById("copySignatureBtn");
+
+    function shortenAddress(addr) {
+      return addr.slice(0, 4) + ".." + addr.slice(-4);
+    }
+
+    function renderConnectedDropdown() {
+      const shortAddr = shortenAddress(connectedAddress);
+      walletSection.innerHTML = `
+        <div class="dropdown" id="walletDropdown">
+          <button class="dropdown-btn" onclick="toggleDropdown()">🔗 ${shortAddr}</button>
+          <div class="dropdown-content">
+            <div class="address-row">
+              <span class="address-short">${shortAddr}</span>
+              <button class="copy-btn" id="copyAddressBtn">Copy Address</button>
+            </div>
+            <button onclick="disconnectWallet()">Disconnect</button>
+          </div>
+        </div>
+      `;
+      
+      document.getElementById("copyAddressBtn").addEventListener("click", () => {
+        copyToClipboard(connectedAddress, "copyAddressBtn");
+      });
+    }
+
+    window.toggleDropdown = () => {
+      document.getElementById("walletDropdown").classList.toggle("show");
+    };
+
+    function copyToClipboard(text, buttonId = null) {
+      navigator.clipboard.writeText(text).then(() => {
+        if (buttonId) {
+          const btn = document.getElementById(buttonId);
+          const originalText = btn.textContent;
+          btn.textContent = "Copied!";
+          btn.classList.add("copied");
+          
+          setTimeout(() => {
+            btn.textContent = originalText;
+            btn.classList.remove("copied");
+          }, 2000);
+        } else {
+          alert("Copied to clipboard!");
+        }
+      }).catch(err => {
+        alert("Copy failed: " + err.message);
+      });
+    }
+
+    async function connectWallet() {
+      if (window.sui) {
+        try {
+          // Connect to Sui wallet
+          wallet = await window.sui.getWallet();
+          const accounts = await wallet.getAccounts();
+          connectedAddress = accounts[0];
+          renderConnectedDropdown();
+        } catch (err) {
+          alert("Connection failed: " + err.message);
+        }
+      } else {
+        alert("Sui wallet not detected! Please install a Sui wallet like Suiet or Martian.");
+      }
+    }
+
+    function disconnectWallet() {
+      wallet = null;
+      connectedAddress = '';
+      walletSection.innerHTML = `<button id="connectBtn">Connect Wallet</button>`;
+      document.getElementById("connectBtn").onclick = connectWallet;
+    }
+
+    async function signMessage() {
+      if (!wallet) {
+        alert("Please connect wallet first.");
+        return;
+      }
+
+      const message = messageInput.value;
+      if (!message) {
+        alert("Please enter a message to sign.");
+        return;
+      }
+
+      try {
+        // Sign the message
+        const signature = await wallet.signMessage({
+          message: new TextEncoder().encode(message)
+        });
+        
+        // Display the signature
+        const signatureString = JSON.stringify(signature, null, 2);
+        signatureDiv.textContent = signatureString;
+        copySignatureBtn.style.display = "inline-block";
+        copySignatureBtn.onclick = () => copyToClipboard(signatureString, "copySignatureBtn");
+        alert("Message signed successfully!");
+      } catch (err) {
+        alert("Signing failed: " + err.message);
+      }
+    }
+
+    document.getElementById("connectBtn").onclick = connectWallet;
+    signBtn.onclick = signMessage;
+
+    // Check if wallet is already connected
+    if (window.sui) {
+      window.sui.getWallet().then(w => {
+        if (w) {
+          w.getAccounts().then(accounts => {
+            if (accounts.length > 0) {
+              wallet = w;
+              connectedAddress = accounts[0];
+              renderConnectedDropdown();
+            }
+          });
+        }
+      });
+    }
+  </script>
+</body>
+</html>
