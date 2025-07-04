@@ -1,59 +1,31 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Suiet DApp Integration</title>
-  <!-- Load wallet-kit dari npm (via CDN modern) -->
-  <script type="module">
-    import { WalletKitCore, WalletKitProvider, WalletKitContext } from 'https://esm.sh/@suiet/wallet-kit@latest';
-    
-    document.addEventListener('DOMContentLoaded', async () => {
-      try {
-        // 1. Inisialisasi WalletKit
-        const walletKitCore = new WalletKitCore({
-          chains: ["sui:mainnet"],
-        });
-        
-        // 2. Setup Provider
-        const walletKitProvider = new WalletKitProvider({
-          walletKitCore,
-        });
-        
-        // 3. Simpan context untuk koneksi
-        window.walletKitContext = new WalletKitContext(walletKitProvider);
-
-        console.log("Suiet Wallet Kit ready!");
-      } catch (e) {
-        console.error("Init error:", e);
-      }
-    });
-
-    async function connectWallet() {
-      if (!window.walletKitContext) {
-        alert("WalletKit not initialized. Check console!");
-        return;
-      }
-      
-      try {
-        // 4. Trigger modal pilihan wallet
-        const wallet = await window.walletKitContext.connect();
-        const address = wallet.accounts[0].address;
-        
-        document.getElementById("walletStatus").innerHTML = `
-          Connected to <strong>${wallet.name}</strong><br>
-          Address: <code>${address}</code>
-        `;
-      } catch (error) {
-        console.error("Connection error:", error);
-        alert("Failed to connect: " + error.message);
-      }
-    }
-  </script>
+  <title>Connect Suiet Wallet</title>
+  <!-- Load Suiet Wallet Kit Standalone dari CDN -->
+  <script src="https://esm.sh/@suiet/wallet-kit@latest/standalone.js"></script>
 </head>
 <body>
   <button onclick="connectWallet()">Connect Wallet</button>
-  <div id="walletStatus" style="margin-top: 1em;">
-    Wallet not connected
-  </div>
+  <div id="walletStatus">Wallet not connected</div>
+
+  <script>
+    async function connectWallet() {
+      try {
+        // Gunakan fungsi global `suietWalletKit` dari standalone.js
+        const wallet = await window.suietWalletKit.connectWallet();
+        
+        // Tampilkan informasi wallet
+        document.getElementById("walletStatus").innerHTML = `
+          Connected to <strong>${wallet.name}</strong><br>
+          Address: <code>${wallet.accounts[0].address}</code>
+        `;
+      } catch (error) {
+        console.error("Error:", error);
+        document.getElementById("walletStatus").textContent = 
+          "Error: " + error.message;
+      }
+    }
+  </script>
 </body>
 </html>
